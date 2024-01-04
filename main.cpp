@@ -18,6 +18,7 @@ const int defaultGhostPositionX = 13, defaultGhostPositionY = 14;
 int SCORE = 0;
 int LIFES = 3;
 int turnsRemaining = 0;
+int leftToPick = 245;
 
 //Starter position for pacman and ghosts on board
 int pacmanX = 13, pacmanY = 23;
@@ -62,70 +63,6 @@ char board[BOARD_HEIGHT][BOARD_WIDTH] = {
     
 };
 
-void powerUpping() {
-    SCORE = SCORE + 20;
-    turnsRemaining = 30;
-}
-
-void collision(int ghostNumber) {
-    if (turnsRemaining <= 0)
-    {
-        --LIFES;
-        if (LIFES == 0)
-        {
-            //todo you lost
-        }
-        else {
-            pacmanX = 13, pacmanY = 23;
-            ghostX[0] = 11;
-            ghostX[1] = 13;
-            ghostX[2] = 14;
-            ghostX[3] = 16;
-            ghostY[0] = 14;
-            ghostY[1] = 14;
-            ghostY[2] = 14;
-            ghostY[3] = 14;
-        }
-        
-    }
-    else {
-        SCORE = SCORE + 50;
-        ghostX[ghostNumber] = defaultGhostPositionX;
-        ghostY[ghostNumber] = defaultGhostPositionY;
-    }
-    
-}
-
-void moveGhosts(int ghostNumber) {
-
-    int direction = rand() % 4;
-            switch (direction) {
-            case 0:
-                if (board[ghostY[ghostNumber] - 1][ghostX[ghostNumber]] != WALL) {
-                    --ghostY[ghostNumber];
-                }
-                break;
-            case 1:
-                if (board[ghostY[ghostNumber] + 1][ghostX[ghostNumber]] != WALL) {
-                    ++ghostY[ghostNumber];
-                }
-                break;
-            case 2:
-                if (board[ghostY[ghostNumber]][ghostX[ghostNumber] - 1] != WALL) {
-                    --ghostX[ghostNumber];
-                }
-                break;
-
-
-            case 3:
-                if (board[ghostY[ghostNumber]][ghostX[ghostNumber] + 1] != WALL) {
-                    ++ghostX[ghostNumber];
-                }
-                break;
-            }
-}
-
-
 void drawBoard() {
     start_color();
 
@@ -133,7 +70,7 @@ void drawBoard() {
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
     // Color pair for board 
     init_pair(2, COLOR_BLUE, COLOR_BLACK); 
-    //Color pair for ghosts
+    //Color pairs for ghosts
     init_pair(3, COLOR_RED, COLOR_BLACK);
     init_pair(4, COLOR_WHITE, COLOR_BLACK);
 
@@ -255,29 +192,118 @@ void drawBoard() {
     
 }
 
+void powerUpping() {
+    SCORE = SCORE + 20;
+    turnsRemaining = 30;
+    --leftToPick;
+}
+
+void collision(int ghostNumber) {
+    if (turnsRemaining <= 0)
+    {
+        --LIFES;
+        if (LIFES != 0)
+        {
+            pacmanX = 13, pacmanY = 23;
+            ghostX[0] = 11;
+            ghostX[1] = 13;
+            ghostX[2] = 14;
+            ghostX[3] = 16;
+            ghostY[0] = 14;
+            ghostY[1] = 14;
+            ghostY[2] = 14;
+            ghostY[3] = 14;
+        }
+    }
+    else {
+        SCORE = SCORE + 50;
+        ghostX[ghostNumber] = defaultGhostPositionX;
+        ghostY[ghostNumber] = defaultGhostPositionY;
+    }
+    
+}
+
+void checkCollision() {
+    if (ghostX[0] == pacmanX && ghostY[0] == pacmanY)
+    {
+        collision(0);
+    }
+    else if (ghostX[1] == pacmanX && ghostY[1] == pacmanY)
+    {
+        collision(1);
+    } 
+    else if (ghostX[2] == pacmanX && ghostY[2] == pacmanY)
+    {
+        collision(2);
+    }
+    else if (ghostX[3] == pacmanX && ghostY[3] == pacmanY)
+    {
+        collision(3);
+    }
+
+}
+
+void moveGhosts(int ghostNumber) {
+
+    int direction = rand() % 4;
+            switch (direction) {
+            case 0:
+                if (board[ghostY[ghostNumber] - 1][ghostX[ghostNumber]] != WALL) {
+                    --ghostY[ghostNumber];
+                }
+                break;
+            case 1:
+                if (board[ghostY[ghostNumber] + 1][ghostX[ghostNumber]] != WALL) {
+                    ++ghostY[ghostNumber];
+                }
+                break;
+            case 2:
+                if (board[ghostY[ghostNumber]][ghostX[ghostNumber] - 1] != WALL) {
+                    --ghostX[ghostNumber];
+                }
+                break;
+            case 3:
+                if (board[ghostY[ghostNumber]][ghostX[ghostNumber] + 1] != WALL) {
+                    ++ghostX[ghostNumber];
+                }
+                break;
+            }
+            if (ghostX[ghostNumber] == 27)
+            {
+                ghostX[ghostNumber] = 1;
+            } else if (ghostX[ghostNumber] == 0)
+            {
+                ghostX[ghostNumber] = 26;
+            }
+            
+            
+}
+
+
+
+
 int main() {
 
     srand(time(0));
-    //setting console window size
-    HWND console = GetConsoleWindow();
-    RECT r;
-    GetWindowRect(console, &r); //stores the console's current dimensions
-    MoveWindow(console, r.left, r.top, 400, 800, TRUE); // 400 width, 800 height (in pixels)
-    
+
+
     //pdcurses settings
     initscr(); // Initialize PDCurses
     noecho(); // Don't echo user input
     curs_set(0); // Hide cursor
+    resize_term(35, 28);
 
-    while (true) {
+    char userInput;
 
+    while (LIFES != 0 && leftToPick != 0) {
+        
         //drawing current game state
         clear();
         drawBoard();
         refresh();
 
         //moving pacman
-        char userInput = getch();
+        userInput = getch();
 
         switch (userInput) {
             case ('w'):
@@ -285,6 +311,7 @@ int main() {
                     if (board[pacmanY - 1][pacmanX] == COIN)
                     {
                         ++SCORE;
+                        --leftToPick;
                         board[pacmanY - 1][pacmanX] = EMPTY;
                     }
                     else if (board[pacmanY - 1][pacmanX] == POWER_UP)
@@ -298,22 +325,7 @@ int main() {
                     moveGhosts(3);
                     --pacmanY;
                     --turnsRemaining;
-                    if (ghostX[0] == pacmanX && ghostY[0] == pacmanY)
-                    {
-                        collision(0);
-                    }
-                    else if (ghostX[1] == pacmanX && ghostY[1] == pacmanY)
-                    {
-                        collision(1);
-                    } 
-                    else if (ghostX[2] == pacmanX && ghostY[2] == pacmanY)
-                    {
-                        collision(2);
-                    }
-                    else if (ghostX[3] == pacmanX && ghostY[3] == pacmanY)
-                    {
-                        collision(3);
-                    }
+                    checkCollision();
                 }
                 break;
 
@@ -323,6 +335,7 @@ int main() {
                     if (board[pacmanY + 1][pacmanX] == COIN)
                     {
                         ++SCORE;
+                        --leftToPick;
                         board[pacmanY + 1][pacmanX] = EMPTY;
                     }
                     else if (board[pacmanY + 1][pacmanX] == POWER_UP)
@@ -335,38 +348,8 @@ int main() {
                     moveGhosts(2);
                     moveGhosts(3);
                     ++pacmanY;
-                        switch (board[pacmanY][pacmanX])
-                        {
-                        case ghost[0]:
-                            collision(0);
-                            break;
-                        case ghost[1]:
-                            collision(1);
-                            break;
-                        case ghost[2]:
-                            collision(2);
-                            break;
-                        case ghost[3]:
-                            collision(3);
-                            break;
-                        }
                     --turnsRemaining;
-                    if (ghostX[0] == pacmanX && ghostY[0] == pacmanY)
-                    {
-                        collision(0);
-                    }
-                    else if (ghostX[1] == pacmanX && ghostY[1] == pacmanY)
-                    {
-                        collision(1);
-                    } 
-                    else if (ghostX[2] == pacmanX && ghostY[2] == pacmanY)
-                    {
-                        collision(2);
-                    }
-                    else if (ghostX[3] == pacmanX && ghostY[3] == pacmanY)
-                    {
-                        collision(3);
-                    }
+                    checkCollision();
 
                 }
                 break;
@@ -377,6 +360,7 @@ int main() {
                     if (board[pacmanY][pacmanX - 1] == COIN)
                     {
                         ++SCORE;
+                        --leftToPick;
                         board[pacmanY][pacmanX - 1] = EMPTY;
                     }
                     else if (board[pacmanY][pacmanX - 1] == POWER_UP)
@@ -389,23 +373,12 @@ int main() {
                     moveGhosts(2);
                     moveGhosts(3);
                     --pacmanX;
+                    if (pacmanX == 0 && pacmanY ==  14)
+                    {
+                        pacmanX = 27;
+                    }
                     --turnsRemaining;
-                    if (ghostX[0] == pacmanX && ghostY[0] == pacmanY)
-                    {
-                        collision(0);
-                    }
-                    else if (ghostX[1] == pacmanX && ghostY[1] == pacmanY)
-                    {
-                        collision(1);
-                    } 
-                    else if (ghostX[2] == pacmanX && ghostY[2] == pacmanY)
-                    {
-                        collision(2);
-                    }
-                    else if (ghostX[3] == pacmanX && ghostY[3] == pacmanY)
-                    {
-                        collision(3);
-                    }
+                    checkCollision();
                     
                 }
                 break;
@@ -416,6 +389,7 @@ int main() {
                     if (board[pacmanY][pacmanX + 1] == COIN)
                     {
                         ++SCORE;
+                        --leftToPick;
                         board[pacmanY][pacmanX + 1] = EMPTY;
                     }
                     else if (board[pacmanY][pacmanX + 1] == POWER_UP)
@@ -428,23 +402,13 @@ int main() {
                     moveGhosts(2);
                     moveGhosts(3);
                     ++pacmanX;
+                    if (pacmanX == 27 && pacmanY ==  14)
+                    {
+                        pacmanX = 0;
+                    }
+                    
                     --turnsRemaining;
-                    if (ghostX[0] == pacmanX && ghostY[0] == pacmanY)
-                    {
-                        collision(0);
-                    }
-                    else if (ghostX[1] == pacmanX && ghostY[1] == pacmanY)
-                    {
-                        collision(1);
-                    } 
-                    else if (ghostX[2] == pacmanX && ghostY[2] == pacmanY)
-                    {
-                        collision(2);
-                    }
-                    else if (ghostX[3] == pacmanX && ghostY[3] == pacmanY)
-                    {
-                        collision(3);
-                    }
+                    checkCollision();
                 }
                 break;
 
@@ -453,7 +417,31 @@ int main() {
                 endwin(); // End PDCurses
                 return 0;
         }
+ 
     }
+    if (leftToPick == 0)
+    {
+        clear();
+        mvprintw(15, 10, "You won!");
+        mvprintw(17, 7, "Final score: %d", SCORE);
+        mvprintw(21, 7, "Press q to exit");
+        while (userInput != 'q')
+        {
+            userInput = getch();
+        }
+    } else
+    {
+        clear();
+        mvprintw(15, 10, "You lost!");
+        mvprintw(17, 7, "Final score: %d", SCORE);
+        mvprintw(21, 7, "Press q to exit");
+        while (userInput != 'q')
+        {
+            userInput = getch();
+        }
+    }
+    
+    
 
     return 0;
 }
